@@ -1,0 +1,782 @@
+{
+  "current_user_url": "https://api.github.com/user",
+  "current_user_authorizations_html_url": "https://github.com/settings/connections/applications{/client_id}",
+  "authorizations_url": "https://api.github.com/authorizations",
+  "code_search_url": "https://api.github.com/search/code?q={query}{&page,per_page,sort,order}",
+  "commit_search_url": "https://api.github.com/search/commits?q={query}{&page,per_page,sort,order}",
+  "emails_url": "https://api.github.com/user/emails",
+  "emojis_url": "https://api.github.com/emojis",
+  "events_url": "https://api.github.com/events",
+  "feeds_url": "https://api.github.com/feeds",
+  "followers_url": "https://api.github.com/user/followers",
+  "following_url": "https://api.github.com/user/following{/target}",
+  "gists_url": "https://api.github.com/gists{/gist_id}",
+  "hub_url": "https://api.github.com/hub",
+  "issue_search_url": "https://api.github.com/search/issues?q={query}{&page,per_page,sort,order}",
+  "issues_url": "https://api.github.com/issues",
+  "keys_url": "https://api.github.com/user/keys",
+  "label_search_url": "https://api.github.com/search/labels?q={query}&repository_id={repository_id}{&page,per_page}",
+  "notifications_url": "https://api.github.com/notifications",
+  "organization_url": "https://api.github.com/orgs/{org}",
+  "organization_repositories_url": "https://api.github.com/orgs/{org}/repos{?type,page,per_page,sort}",
+  "organization_teams_url": "https://api.github.com/orgs/{org}/teams",
+  "public_gists_url": "https://api.github.com/gists/public",
+  "rate_limit_url": "https://api.github.com/rate_limit",
+  "repository_url": "https://api.github.com/repos/{owner}/{repo}",
+  "repository_search_url": "https://api.github.com/search/repositories?q={query}{&page,per_page,sort,order}",
+  "current_user_repositories_url": "https://api.github.com/user/repos{?type,page,per_page,sort}",
+  "starred_url": "https://api.github.com/user/starred{/owner}{/repo}",
+  "starred_gists_url": "https://api.github.com/gists/starred",
+  "topic_search_url": "https://api.github.com/search/topics?q={query}{&page,per_page}",
+  "user_url": "https://api.github.com/users/{user}",
+  "user_organizations_url": "https://api.github.com/user/orgs",
+  "user_repositories_url": "https://api.github.com/users/{user}/repos{?type,page,per_page,sort}",
+  "user_search_url": "https://api.github.com/search/users?q={query}{&page,per_page,sort,order}"
+}
+
+
+"rate_limit_url": "https://api.github.com/rate_limit"
+--> request selbst geht nicht auf rate limit
+{
+  "resources": {
+    "core": {
+      "limit": 60,
+      "remaining": 56,
+      "reset": 1654588583,
+      "used": 4,
+      "resource": "core"
+    },
+   ...
+    "search": {
+      "limit": 10,
+      "remaining": 10,
+      "reset": 1654585762,
+      "used": 0,
+      "resource": "search"
+    }
+  },
+  "rate": {
+    "limit": 60,
+    "remaining": 56,
+    "reset": 1654588583,
+    "used": 4,
+    "resource": "core"
+  }
+}
+
+
+"repository_search_url": "https://api.github.com/search/repositories?q={query}{&page,per_page,sort,order}"
+- results are sorted by best match in descending order
+- Search API has a custom rate limit: unauthenticated requests up to 10 requests per minute
+- --> use your language's preferred HTML-encoder to construct your query strings
+-  include forks in the search results, you will need to add fork:true or fork:only to your query
+
+--> curl "https://api.github.com/search/repositories?q=brainfuck"
+--> curl "https://api.github.com/search/repositories?l=Python&o=desc&q=brainfuck&s=stars&type=Repositories"
+--> curl "https://api.github.com/search/repositories?q=brainfuck&user=sgmeiner&language=Python"
+--> curl "https://api.github.com/search/repositories?o=desc&q=brainfuck+interpreter+license%3Amit+language%3APython&s=updated&type=Repositories"
+--> curl "https://api.github.com/search/repositories?q=brainfuck+interpreter+license%3Amit+language%3APython+pushed%3A>2022-01-01"
+
+
+https://github.com/search?o=desc&q=brainfuck+interpreter+license%3Amit+language%3APython&s=updated&type=Repositories
+
+
+
+[
+  {
+    "total": 2,
+    "week": 1623542400,
+    "days": [
+      2,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "total": 0,
+    "week": 1624147200,
+    "days": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "total": 0,
+    "week": 1624752000,
+    "days": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "total": 0,
+    "week": 1625356800,
+    "days": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "total": 0,
+    "week": 1625961600,
+    "days": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "total": 2,
+    "week": 1626566400,
+    "days": [
+      2,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "total": 0,
+    "week": 1627171200,
+    "days": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "total": 0,
+    "week": 1627776000,
+    "days": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "total": 0,
+    "week": 1628380800,
+    "days": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "total": 0,
+    "week": 1628985600,
+    "days": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "total": 0,
+    "week": 1629590400,
+    "days": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "total": 5,
+    "week": 1630195200,
+    "days": [
+      0,
+      0,
+      0,
+      0,
+      5,
+      0,
+      0
+    ]
+  },
+  {
+    "total": 0,
+    "week": 1630800000,
+    "days": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "total": 0,
+    "week": 1631404800,
+    "days": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "total": 0,
+    "week": 1632009600,
+    "days": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "total": 0,
+    "week": 1632614400,
+    "days": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "total": 0,
+    "week": 1633219200,
+    "days": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "total": 0,
+    "week": 1633824000,
+    "days": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "total": 0,
+    "week": 1634428800,
+    "days": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "total": 2,
+    "week": 1635033600,
+    "days": [
+      0,
+      0,
+      0,
+      0,
+      2,
+      0,
+      0
+    ]
+  },
+  {
+    "total": 1,
+    "week": 1635638400,
+    "days": [
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "total": 0,
+    "week": 1636243200,
+    "days": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "total": 0,
+    "week": 1636848000,
+    "days": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "total": 0,
+    "week": 1637452800,
+    "days": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "total": 12,
+    "week": 1638057600,
+    "days": [
+      0,
+      12,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "total": 0,
+    "week": 1638662400,
+    "days": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "total": 0,
+    "week": 1639267200,
+    "days": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "total": 1,
+    "week": 1639872000,
+    "days": [
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "total": 0,
+    "week": 1640476800,
+    "days": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "total": 2,
+    "week": 1641081600,
+    "days": [
+      0,
+      0,
+      2,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "total": 0,
+    "week": 1641686400,
+    "days": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "total": 9,
+    "week": 1642291200,
+    "days": [
+      0,
+      0,
+      2,
+      7,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "total": 0,
+    "week": 1642896000,
+    "days": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "total": 0,
+    "week": 1643500800,
+    "days": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "total": 0,
+    "week": 1644105600,
+    "days": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "total": 3,
+    "week": 1644710400,
+    "days": [
+      0,
+      0,
+      2,
+      1,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "total": 1,
+    "week": 1645315200,
+    "days": [
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "total": 2,
+    "week": 1645920000,
+    "days": [
+      0,
+      2,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "total": 0,
+    "week": 1646524800,
+    "days": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "total": 1,
+    "week": 1647129600,
+    "days": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1
+    ]
+  },
+  {
+    "total": 0,
+    "week": 1647734400,
+    "days": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "total": 0,
+    "week": 1648339200,
+    "days": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "total": 0,
+    "week": 1648944000,
+    "days": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "total": 0,
+    "week": 1649548800,
+    "days": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "total": 14,
+    "week": 1650153600,
+    "days": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      14
+    ]
+  },
+  {
+    "total": 4,
+    "week": 1650758400,
+    "days": [
+      1,
+      0,
+      0,
+      0,
+      2,
+      0,
+      1
+    ]
+  },
+  {
+    "total": 36,
+    "week": 1651363200,
+    "days": [
+      6,
+      2,
+      7,
+      9,
+      9,
+      3,
+      0
+    ]
+  },
+  {
+    "total": 3,
+    "week": 1651968000,
+    "days": [
+      0,
+      0,
+      0,
+      2,
+      0,
+      0,
+      1
+    ]
+  },
+  {
+    "total": 3,
+    "week": 1652572800,
+    "days": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      2
+    ]
+  },
+  {
+    "total": 6,
+    "week": 1653177600,
+    "days": [
+      0,
+      0,
+      2,
+      2,
+      2,
+      0,
+      0
+    ]
+  },
+  {
+    "total": 0,
+    "week": 1653782400,
+    "days": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "total": 0,
+    "week": 1654387200,
+    "days": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  }
+]
+q=brainfuck&user=sgmeiner&language=Python
+q=brainfuck+interpreter+license%3Amit+language%3APython+pushed%3A>2022-01-01
+
+
+https://github.com/search?q=twitter+intelligence+language%3APython&type=Repositories&ref=advsearch&l=Python&l=
+
+https://github.com/rasbt/mlxtend/graphs/code-frequency
+
+https://docs.github.com/en/rest/search#search-repositories
+
+https://docs.github.com/en/search-github/searching-on-github/searching-for-repositories#search-based-on-the-contents-of-a-repository
+
+https://api.github.com/repos/rasbt/mlxtend/stats/contributors
+
+https://requests.readthedocs.io/en/latest/user/quickstart/#passing-parameters-in-urls
+
+https://realpython.com/python-requests/
+
+
+

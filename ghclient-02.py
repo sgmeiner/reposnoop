@@ -19,16 +19,29 @@ def get_repo_search(keywords="", qualifiers=""):
     search_url = "&".join([API_SEARCH,
                            f"q={'+'.join(search_kw)}",
                            *search_qual])
+    print("searching for " + search_url)
 
     # sending out request. URL should still be built better
     search_response = requests.get(search_url)
+    print("\nHeaders:", search_response.headers['content-type'])
+    print("Encoding:", search_response.encoding)
+    print("Status:", search_response.status_code)
     
-    # parse response with requests json parser
+    # meanwhile we use the requests json parser
     result_json = search_response.json()
+    print(f"\nResponse:\n    incomplete results: {result_json['incomplete_results']}")
+    print(f"    number of items: {len(result_json['items'])}")
+    print(f"    items total_count, should be: {result_json['total_count']}")
 
     item_list = []
-    # restructure data, shorten for the whole bunch of URLs
     for item in result_json['items']:
+        print(f"\n{'name: ':<20}{str(item['name']):<35}")
+        # print(f"{'updated_at: ':<20}{str(item['updated_at']):<35}")
+        # print(f"{'stargazers_count: ':<20}{str(item['stargazers_count']):<35}")
+        print(f"{'private: ':<20}{str(item['private']):<35}")
+        print(f"{'visibility: ':<20}{str(item['visibility']):<35}")
+        
+        # reconfigure data, shorten for bunch of URLs
         item_list.append({
             "name": str(item['name']),
             "description": str(item['description']),
@@ -52,8 +65,7 @@ def get_repo_search(keywords="", qualifiers=""):
 
 def github_client_main():
     """Test / present modules class(es)."""
-    repo_list = get_repo_search(keywords=["insurance", "data", "analysis"],
-                                qualifiers=["ref=advsearch", "per_page=5"])
+    repo_list = get_repo_search()
     print("\n\n".join([str(item) for item in repo_list]))
     
 
