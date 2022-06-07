@@ -7,8 +7,7 @@ relevant in respect to some topic, and analyze them for their degree of dissemin
 and wether they're  up to date and well maintained.
 
 ### Work in progress
-
-By now this project is under heavy construction. Everything you see here might be non-functional
+Currently this project is under heavy construction. Everything you see here might be non-functional
 or contain code or ressources that are not intended to stay here. Just for entertainment see it
 [being built here live.](construction_steps.md)
 
