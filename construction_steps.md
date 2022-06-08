@@ -30,7 +30,7 @@ The GitHub REST API is pretty well documented, we find it here:
 We issue a simple request by curl, and we get:
 
 <details>
-  <summary>https://api.github.com (click!)</summary>
+  <summary>https:// api.github.com (click!)</summary>
 
     > curl https://api.github.com
 
@@ -44,7 +44,7 @@ at GitHub, choose one of the first and check it via users endpoint:
 
 
 <details>
-  <summary>https://api.github.com/users/pittcsc (click!)</summary>
+  <summary>https:// api.github.com/users/pittcsc (click!)</summary>
 
     > curl https://api.github.com/users/pittcsc
 
@@ -88,7 +88,7 @@ at GitHub, choose one of the first and check it via users endpoint:
 It's the Pittsburgh Computer Science Club. Which repositories do they have? We use the info taken from the last response on users endpoint and go like this:
 
 <details>
-  <summary>https://api.github.com/users/pittcsc/repos (click!)</summary>
+  <summary>https:// api.github.com/users/pittcsc/repos (click!)</summary>
 
     > curl https://api.github.com/users/pittcsc/repos
 
@@ -306,15 +306,14 @@ to get a project's contributors and their commits by week:
 
 </details><br/>
 
-This looks like the information we're after. Until now we just tested the API via curl.
-Now it's time to make a first Python prototype, stuff all the data in some handy
-structure and look look how we can condense it into a form which
-is accessible to human perception.
+This looks like the information we're after.
 
-## A first prototype for gathering data
+## A prototype for gathering data
+
+Until now we just tested the API via curl. Now it's time to do a first Python prototype. We have to request the data, do some exception handling and check wether we got wat we asked for.
 
 <details>
-  <summary>send repository search request</summary>
+  <summary>send repository search request (click!)</summary>
 
     import requests
 
@@ -327,22 +326,25 @@ is accessible to human perception.
         """Test / present modules class(es)."""
         # search query has to be crafted by user input later
         search_kw = ["intelligence", "twitter"]
-        search_url = "&".join([API_SEARCH, f"q={'+'.join(search_kw)}+language%3Apython",
-                               "ref=advsearch", "per_page=100"])
+        search_url = "&".join([API_SEARCH,
+                               f"q={'+'.join(search_kw)}+language%3Apython",
+                               "ref=advsearch", "per_page=10"])
         print("searching for " + search_url)
 
         # sending out request. URL should still be built better
-        search_response =  requests.get(search_url)
+        search_response = requests.get(search_url)
         print("\nHeaders:", search_response.headers['content-type'])
         print("Encoding:", search_response.encoding)
         print("Status:", search_response.status_code)
 
         # meanwhile we use the requests json parser
         result_json = search_response.json()
-        print(f"\nResponse:\n    incomplete results: {result_json['incomplete_results']}")
+        print(f"\nResponse:\n    incomplete results: "
+              f"{result_json['incomplete_results']}")
         print(f"    number of items: {len(result_json['items'])}")
         print(f"    items total_count, should be: {result_json['total_count']}")
 
+        # print the data rows
         for item in result_json['items']:
             print(f"\n{'name: ':<20}{str(item['name']):<35}")
             print(f"{'updated_at: ':<20}{str(item['updated_at']):<35}")
@@ -356,7 +358,100 @@ is accessible to human perception.
 
 </details><br/>
 
-da
+We get the following response (formatted excerpts):
+
+<details>
+  <summary>response data (click")</summary>
+
+    searching for https://api.github.com/search/repositories?&q=intelligence+twitter+language%3Apython&ref=advsearch&per_page=10
+
+    Headers: application/json; charset=utf-8
+    Encoding: utf-8
+    Status: 200
+
+    Response:
+        incomplete results: False
+        number of items: 10
+        items total_count, should be: 57
+
+    name:               twitter-intelligence               
+    updated_at:         2022-05-08T18:50:08Z               
+    stargazers_count:   206                                
+
+    name:               tinfoleak                          
+    updated_at:         2022-06-07T21:57:52Z               
+    stargazers_count:   1652                               
+
+    name:               twittego                           
+    updated_at:         2015-10-10T16:51:47Z               
+    stargazers_count:   3                                  
+
+    name:               OSINT                              
+    updated_at:         2022-05-19T21:11:33Z               
+    stargazers_count:   14                                 
+
+    name:               iKy                                
+    updated_at:         2022-06-07T10:13:11Z               
+    stargazers_count:   421                                
+
+    name:               twitbot                            
+    updated_at:         2018-09-09T10:03:34Z               
+    stargazers_count:   8                                  
+
+</details><br/>
+
+If we see the above code, we can divide the process into at least four
+consecutive steps:
+
+| **1. Prepare URL** | **2. Request** | **3. Decode** | **4. Extract** |
+|---|---|---|---|
+| + API endpoint<br>+ payload (search string,<br>  qualifiers etc.) | + complete URL | + serial (response) data:<br>  JSON | + raw data structure<br>  (dict / list) |
+| = URL, ready for request | = response (if success)<br>= HTTP status code<br>(= rate limit status) | = raw data structure (contains tons of overhead)<br>= final status info on request success | = clean data structure<br>= excerpt relevant data<br>= type conversions |
+| ?? escape special chars<br>?? join parts the right way<br>?? handle missing / wrong values | ?? failure modes<br>?? retry recommendation<br>?? valid JSON content<br>(no soft failure) | ?? valid JSON<br>?? clipped content (--> paging)<br>?? content available<br>?? lots of other corner cases | ?? meta overhead<br>?? irrelevant parts<br>?? data gaps |
+
+Within the scope of this project, we will only be able to implement a part of the requirements resulting from this, which will ensure the functioning in most cases.
+
+For the endpoints we will use, we define a constant:
+
+    ENDPOINTS = {
+                "api_repo_search": "https://api.github.com/search/repositories?q=",
+                "api_repo_commits": "https://api.github.com/repos/OWNER/REPO/"
+                                    "stats/commit_activity?",
+                "api_repo_contrib": "https://api.github.com/repos/OWNER/REPO/"
+                                    "stats/contributors?"
+                }
+
+According to step 1 from the table above, we build a function which crafts the url from endpoint and payload information. This combines the endpoint URL snippet with a possible list of search keywords and further qualifiers. We try to escape all special characters except the delimiters we put in ourselves before. Some missing value cases are accounted for in part, too:
+
+<details>
+  <summary>prepare_url(endpoint, payload) (click!)</summary>
+
+    def prepare_url(endpoint, payload):
+        """Prepare URL at <endpoint> with <payload> for request."""
+        if endpoint in ENDPOINTS:
+            compl_endpoint = ENDPOINTS[endpoint].replace(
+                            "OWNER",
+                            urls.quote(payload["owner"])).replace(
+                            "REPO",
+                            urls.quote(payload["repo"]))
+            search_string = urls.quote_plus(" ".join(payload["search_kw"]))
+            qualif_str = urls.quote("&".join(
+                [f"{str(k)}={str(v)}" for k, v in payload["qualifiers"].items()]),
+                safe="/&=")
+            return compl_endpoint + "&".join(filter(None,
+                                                    [search_string, qualif_str]))
+        else:
+            raise ValueError("Request for unknown endpoint")
+
+</details>
+
+
+
+
+
+
+
+
 
 
 <br/>
@@ -375,7 +470,7 @@ or contain code or ressources that are not intended to stay here.
 
 ***
 
-### Here comes only copy-paste boilerplate text.
+### Here comes the copy-paste boilerplate text.
 
 <br/>
 
