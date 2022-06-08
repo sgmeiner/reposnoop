@@ -142,57 +142,6 @@ def get_commits(payload):
         return pd.DataFrame(commit_list, columns=["commits"], index=week_list)
 
 
-def get_contribs(payload):
-    """Request a repos contributors and return their activity as pd.DataFrame.
-
-    Returns a pandas DataFrame, each column corresponds to one contributor,
-    each row has the respective commit totals of a week.
-    The df is indexed by the week's POSIX timestamp, column names are
-    the names of the contributing account owners (=contributors).
-    example:
-    (index)       commits
-    1623542400          5
-    1624147200          6
-    1624752000          3
-    1625356800         14
-    1625961600         24
-    1626566400          4
-    """
-    try:
-        result_list = get_api_data("api_repo_contrib", payload)
-    except Exception as e:
-        e_line = sys.exc_info()[2].tb_lineno
-        print("Exception in get_contribs() occurred drawing data from API:")
-        print(e, "at line", e_line, type(e))
-        return None
-    else:
-        # pprint(result_list)
-        # contrib_list = []
-        # week_list = []
-        print("Got data from", len(result_list), "contributors.")
-        week_start_diff = 0
-        week_stop_diff = 0
-        week_len_diff = 0
-        for contributor in result_list:
-            week_start_diff += abs(result_list[0]["weeks"][0]["w"]
-                               - contributor["weeks"][0]["w"])
-            week_stop_diff += abs(result_list[0]["weeks"][-1]["w"]
-                               - contributor["weeks"][-1]["w"])
-            week_len_diff += abs(len(result_list[0]["weeks"])
-                               - len(contributor["weeks"]))
-                               
-        print("week_start_diff:", week_start_diff)
-        print("week_stop_diff:", week_start_diff)
-        print("week_len_diff:", week_start_diff)
-
-            # # extract relevant data
-        # for item in result_list:
-        #     contrib_list.append(int(item["total"]))
-        #     week_list.append(int(item["week"]))
-        # return pd.DataFrame(commit_list, columns=["commits"], index=week_list)
-        return "none"
-
-
 def get_commits_by_rname(name, repo_list):
     """Return commit data for repository from list, select by repo name."""
     my_payload = {
@@ -236,7 +185,7 @@ def github_client_main():
         ],
         "qualifiers": {
             "ref": "advsearch",
-            "per_page": 100
+            "per_page": 25
         }
     }
     
@@ -260,8 +209,7 @@ def github_client_main():
     # print an overview
     for row in sorted_search:
         print(f"repo: {row['name']}, owner: {row['owner']}, "
-              f"stars: {row['stargazers_count']}",
-              f"\n      description: {row['description'][:80]}")
+              f"stars: {row['stargazers_count']}")
         
     # request weekly commit statistics
     ask_repo = True
@@ -285,19 +233,6 @@ def github_client_main():
                 pprint(my_commits)
                 print("Total # commits within the last 52 weeks:",
                       my_commits["commits"].sum())
-
-            smpl_payload = {
-                "owner": "",
-                "repo": "",
-                "search_kw": [],
-                "qualifiers": {}
-            }
-            smpl_payload["repo"] = repo_name
-            smpl_payload["owner"] = list(filter(lambda item:
-                                              item["name"] == repo_name,
-                                              sorted_search))[0]["owner"]
-            my_contribs = get_contribs(smpl_payload)
-            pprint(my_contribs)
 
 
 if __name__ == "__main__":
