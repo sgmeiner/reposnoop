@@ -22,7 +22,8 @@ ENDPOINTS = {
 
 
 class GitHubRequest:
-    """Manage requests to GitHub API."""
+    """Low level class to manage requests to GitHub API."""
+
     def __init__(self, endpoint, payload):
         """Initialize instance vars."""
         self.endpoint = endpoint
@@ -36,7 +37,7 @@ class GitHubRequest:
                       "request": "",
                       "json": ""
                       }
-    
+
     def prepare_url(self):
         """Prepare URL str for request."""
         if self.endpoint in ENDPOINTS:
@@ -52,12 +53,14 @@ class GitHubRequest:
                 search_string = None
             if "search_kw" in self.payload.keys():
                 qualif_str = urls.quote("&".join(
-                    [f"{str(k)}={str(v)}" for k, v in self.payload["qualifiers"].items()]),
-                    safe="/&=")
+                    [f"{str(k)}={str(v)}" for k, v in self.payload[
+                     "qualifiers"].items()]),
+                     safe="/&=")
             else:
                 qualif_str = None
             self.url = compl_endpoint + "&".join(filter(None,
-                                                        [search_string, qualif_str]))
+                                                        [search_string,
+                                                         qualif_str]))
             self.errors["url"] = ""
             return self.url
         else:
@@ -97,9 +100,11 @@ class GitHubRequest:
             return self.res_data
 
     def get_url(self):
+        """Return prepared URL."""
         return self.url
 
     def get_response(self):
+        """Return raw response blob."""
         return self.response
 
     def get_data(self):
@@ -116,6 +121,7 @@ class GitHubRequest:
 
 class RepoSearch:
     """Manage repository search and response items."""
+
     def __init__(self, keywords, qualifiers={}):
         """Initialize instance vars and fill gaps with default values."""
         self.payload = {
@@ -139,7 +145,7 @@ class RepoSearch:
 
     def pull(self):
         """Perform search request and filter results into list.
-    
+
         self.response_items is a list of dicts, each corresponding
         to a repository. Keys contained in dicts:
         name|str, full_name|str, description|str, owner|str, topics|list,
@@ -168,8 +174,8 @@ class RepoSearch:
                     http_status = str(self.api_request.res_stat)
                     # good, but empty?
                     if http_status == "200":
-                        # response was successful, but apparently search did not
-                        # find a single item ...
+                        # response was successful, but apparently search
+                        # did not find a single item ...
                         self.errors["request"] = ""
                         if len(self.response_items) == 0:
                             # still, no data
@@ -178,14 +184,17 @@ class RepoSearch:
                         # return self.items
                     # hit the rate limit?
                     elif http_status == "403":
-                        if "rate limit exceeded" in self.api_request.get_response().text:
-                            print("Retry after 90 secs, rate limit was hit ...")
+                        if "rate limit exceeded" in (self.api_request
+                                                     .get_response().text):
+                            print("Retry after 90 secs, "
+                                  "rate limit was hit ...")
                             time.sleep(wait_for_rate)
                             # maybe just wait longer next time
                             wait_for_rate *= 3
                             if i > 2:
-                                self.api_request.get_response().raise_for_status()
-    
+                                (self.api_request.get_response()
+                                 .raise_for_status())
+
         # extract relevant data
         for item in self.response['items']:
             self.items.append({
@@ -212,26 +221,32 @@ class RepoSearch:
         return self.items
 
     def get_keywords(self):
+        """Return search keywords as provided before."""
         return self.payload["search_kw"]
 
     def get_qualifiers(self):
+        """Return search qualifiers as provided before."""
         return self.payload["qualifiers"]
 
     def get_items(self):
+        """Return list of search items."""
         return self.items
 
     def get_raw_response(self):
+        """Return raw response as sent by API."""
         return self.response
 
 
 class RepoCommits:
     """Manage Repository Commit data."""
+
     def __init__(self, repo_fullname):
         """Initialize instance vars and fill gaps with default values."""
         self.repo_name = repo_fullname
         self.payload = {}
         if "/" in self.repo_name:
-            self.payload["owner"], self.payload["repo"] = self.repo_name.split("/")
+            self.payload["owner"],
+            self.payload["repo"] = self.repo_name.split("/")
         else:
             raise ValueError("Need the 'full_name' of the repository.")
         self.api_request = GitHubRequest("api_repo_commits", self.payload)
@@ -244,7 +259,7 @@ class RepoCommits:
 
     def pull(self):
         """Request commits and return them as pandas df.
-    
+
         Returns a pandas DataFrame, each row has the commit totals of a week.
         The df is indexed by the week's POSIX timestamp.
         example:
@@ -278,12 +293,11 @@ class RepoCommits:
                     return self.commits
             else:
                 # no exception, but still no valid data or empty frame
-                # if len(self.response_items) == 0:
-                #     self.errors["data"] = "empty"
-                #     return pd.DataFrame([], columns=["commits"])
                 print("\nERROR: Got no valid response on commits request.\n")
-                self.errors["request"] = (f"HTTP code {http_status} while pulling commits of"
-                                          + f"{self.payload['owner']}/{self.payload['repo']}")
+                self.errors["request"] = (f"HTTP code {http_status} "
+                                          f"while pulling commits of"
+                                          f"{self.payload['owner']}/"
+                                          f"{self.payload['repo']}")
                 self.commits = pd.DataFrame([], columns=["commits"])
                 return self.commits
 
@@ -293,27 +307,34 @@ class RepoCommits:
         for item in self.response_items:
             commit_list.append(int(item["total"]))
             week_list.append(int(item["week"]))
-        self.commits = pd.DataFrame(commit_list, columns=["commits"], index=week_list)
+        self.commits = pd.DataFrame(commit_list,
+                                    columns=["commits"],
+                                    index=week_list)
         return self.commits
 
     def get_commits(self):
+        """Return repo's commits of the last 52 weeks."""
         return self.commits
 
     def get_raw_response(self):
+        """Return raw API response blob."""
         return self.response_items
-    
+
     def get_name(self):
+        """Return name of repo as provided before."""
         return self.repo_name
 
 
 class RepoContribs:
     """Manage repository contributors data."""
+
     def __init__(self, repo_fullname):
         """Initialize instance vars and fill gaps with default values."""
         self.repo_name = repo_fullname
         self.payload = {}
         if "/" in self.repo_name:
-            self.payload["owner"], self.payload["repo"] = self.repo_name.split("/")
+            self.payload["owner"],
+            self.payload["repo"] = self.repo_name.split("/")
         else:
             raise ValueError("Need the 'full_name' of the repository.")
         self.api_request = GitHubRequest("api_repo_contrib", self.payload)
@@ -327,14 +348,16 @@ class RepoContribs:
                       }
 
     def pull(self):
-        """Request a repos contributors and return their activity as pd.DataFrame.
-    
+        """Request repo's contributors, return their commit activity.
+
         Returns a pandas DataFrame, each column corresponds to one contributor,
         each row has the respective commit totals of a week.
         The df is indexed by the week's POSIX timestamp, column names are
         the names of the contributing account owners (=contributors).
+
         Additionally it creates a pandas DataFrame with the total commits
-        of each contributor. This is not used / maintained in the current version.
+        of each contributor. This is not used /
+        maintained in the current version.
         """
         try:
             self.response_items = self.api_request.get_data()
@@ -354,33 +377,37 @@ class RepoContribs:
                 if len(self.response_items) == 0:
                     # still, no data
                     self.errors["data"] = "empty"
-                    self.contributors = pd.DataFrame([], columns=["total_commits"])
+                    self.contributors = pd.DataFrame([],
+                                                     columns=["total_commits"])
                     return self.contributors
             else:
                 # no exception, but still no valid data or empty frame
-                print("\nERROR: Got no valid response on contributor data request.\n")
-                self.errors["request"] = (f"HTTP code {http_status} while pulling commits of"
-                                          + f"{self.payload['owner']}/{self.payload['repo']}")
+                print("\nNo valid response on contributor data request.\n")
+                self.errors["request"] = (f"HTTP code {http_status} "
+                                          "while pulling commits of"
+                                          f"{self.payload['owner']}/"
+                                          f"{self.payload['repo']}")
                 return pd.DataFrame([], columns=["total_commits"])
-    
+
         # first building the index (week) and first column ...
         week_list = []
         commit_first_list = []
         for week in self.response_items[0]["weeks"]:
             week_list.append(int(week["w"]))
             commit_first_list.append(int(week["c"]))
-    
+
         # now build the initial dataframe. we're appending only whole columns
         self.contrib_fulldata = pd.DataFrame(commit_first_list,
-                                  columns=[self.response_items[0]["author"]["login"]],
-                                  index=week_list)
-    
+                                             columns=[self.response_items[0][
+                                                 "author"]["login"]],
+                                             index=week_list)
+
         # prepare the summary as nested list
         contrib_summary = [
                           [str(self.response_items[0]["author"]["login"])],
                           [int(self.response_items[0]["total"])]
                           ]
-    
+
         # extract more data by columns
         if len(self.response_items) > 1:
             for contributor in self.response_items[1:]:
@@ -393,32 +420,35 @@ class RepoContribs:
                 # append new column to summary lists
                 contrib_summary[0].append(contr_name)
                 contrib_summary[1].append(int(contributor["total"]))
-    
+
         # finally, convert nested list summary to pd.df
         self.contributors = pd.DataFrame(
                                         contrib_summary[1],
                                         index=contrib_summary[0],
                                         columns=["total_commits"]
                                         )
-    
+
         return self.contributors
 
     def get_contributors(self):
+        """Return contributors, their commit activity as pd DataFrame."""
         return self.contributors
 
     def get_raw_response(self):
+        """Return raw API response blob."""
         return self.response_items
 
     def get_name(self):
+        """Return full_name of repo as provided before."""
         return self.repo_name
 
 
 def github_client_main():
     """Test / present modules class(es)."""
-
     # testing: ask for search terms.
     ask_sterms = True
     my_sterms = []
+    # ask search terms from user
     while ask_sterms:
         term = input("Add search term: ")
         if term == "":
@@ -469,10 +499,12 @@ def github_client_main():
                 break
             else:
                 print("my_commits", type(my_commits))
-                print("my_commits.get_commits()", type(my_commits.get_commits()))
+                print("my_commits.get_commits()",
+                      type(my_commits.get_commits()))
                 pprint(my_commits.get_commits())
                 print("my_contribs", type(my_contribs))
-                print("my_contribs.get_contributors()", type(my_contribs.get_contributors()))
+                print("my_contribs.get_contributors()",
+                      type(my_contribs.get_contributors()))
                 pprint(my_contribs.get_contributors())
                 print("\nTotal # commits within the last 52 weeks:",
                       my_commits.get_commits()["commits"].sum())
