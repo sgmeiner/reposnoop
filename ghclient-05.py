@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """reposnoop GitHub statistics, API client module.
 
 2022 by Stefan Groh, stefan_groh@gmx.de
@@ -45,17 +46,10 @@ class GitHubRequest:
                             urls.quote(self.payload["owner"])).replace(
                             "REPO",
                             urls.quote(self.payload["repo"]))
-            if "search_kw" in self.payload.keys():
-                search_string = urls.quote_plus(" ".join(
-                                self.payload["search_kw"]))
-            else:
-                search_string = None
-            if "search_kw" in self.payload.keys():
-                qualif_str = urls.quote("&".join(
-                    [f"{str(k)}={str(v)}" for k, v in self.payload["qualifiers"].items()]),
-                    safe="/&=")
-            else:
-                qualif_str = None
+            search_string = urls.quote_plus(" ".join(self.payload["search_kw"]))
+            qualif_str = urls.quote("&".join(
+                [f"{str(k)}={str(v)}" for k, v in self.payload["qualifiers"].items()]),
+                safe="/&=")
             self.url = compl_endpoint + "&".join(filter(None,
                                                         [search_string, qualif_str]))
             self.errors["url"] = ""
@@ -116,7 +110,7 @@ class GitHubRequest:
 
 class RepoSearch:
     """Manage repository search and response items."""
-    def __init__(self, keywords, qualifiers={}):
+    def __init__(self, *keywords, **qualifiers):
         """Initialize instance vars and fill gaps with default values."""
         self.payload = {
                        "owner": "",
@@ -163,19 +157,14 @@ class RepoSearch:
             else:
                 if self.response:
                     self.errors["request"] = ""
-                    break
                 else:
                     http_status = str(self.api_request.res_stat)
                     # good, but empty?
                     if http_status == "200":
                         # response was successful, but apparently search did not
-                        # find a single item ...
+                        # find a single item. Still everything ok.
                         self.errors["request"] = ""
-                        if len(self.response_items) == 0:
-                            # still, no data
-                            self.errors["data"] = "empty"
-                            return pd.DataFrame([], columns=["commits"])
-                        # return self.items
+                        return self.items
                     # hit the rate limit?
                     elif http_status == "403":
                         if "rate limit exceeded" in self.api_request.get_response().text:
@@ -228,12 +217,8 @@ class RepoCommits:
     """Manage Repository Commit data."""
     def __init__(self, repo_fullname):
         """Initialize instance vars and fill gaps with default values."""
-        self.repo_name = repo_fullname
         self.payload = {}
-        if "/" in self.repo_name:
-            self.payload["owner"], self.payload["repo"] = self.repo_name.split("/")
-        else:
-            raise ValueError("Need the 'full_name' of the repository.")
+        self.payload["owner"], self.payload["repo"] = repo_fullname.split("/")
         self.api_request = GitHubRequest("api_repo_commits", self.payload)
         self.response_items = []
         self.commits = None
@@ -269,23 +254,14 @@ class RepoCommits:
         else:
             http_status = str(self.api_request.res_stat)
             if http_status == "200":
-                # request went fine
+                # everything went fine
                 self.errors["request"] = ""
-                if len(self.response_items) == 0:
-                    # still, no data
-                    self.errors["data"] = "empty"
-                    self.commits = pd.DataFrame([], columns=["commits"])
-                    return self.commits
             else:
                 # no exception, but still no valid data or empty frame
-                # if len(self.response_items) == 0:
-                #     self.errors["data"] = "empty"
-                #     return pd.DataFrame([], columns=["commits"])
                 print("\nERROR: Got no valid response on commits request.\n")
                 self.errors["request"] = (f"HTTP code {http_status} while pulling commits of"
                                           + f"{self.payload['owner']}/{self.payload['repo']}")
-                self.commits = pd.DataFrame([], columns=["commits"])
-                return self.commits
+                return pd.DataFrame([], columns=["commits"])
 
         # extract relevant data
         commit_list = []
@@ -301,120 +277,138 @@ class RepoCommits:
 
     def get_raw_response(self):
         return self.response_items
-    
-    def get_name(self):
-        return self.repo_name
 
 
-class RepoContribs:
-    """Manage repository contributors data."""
-    def __init__(self, repo_fullname):
-        """Initialize instance vars and fill gaps with default values."""
-        self.repo_name = repo_fullname
-        self.payload = {}
-        if "/" in self.repo_name:
-            self.payload["owner"], self.payload["repo"] = self.repo_name.split("/")
-        else:
-            raise ValueError("Need the 'full_name' of the repository.")
-        self.api_request = GitHubRequest("api_repo_contrib", self.payload)
-        self.response_items = []
-        # the short summary df ...
-        self.contributors = None
-        self.contrib_fulldata = None
-        self.errors = {
-                      "request": "",
-                      "data": ""
-                      }
+def get_contribs(payload):
+    """Request a repos contributors and return their activity as pd.DataFrame.
 
-    def pull(self):
-        """Request a repos contributors and return their activity as pd.DataFrame.
-    
-        Returns a pandas DataFrame, each column corresponds to one contributor,
-        each row has the respective commit totals of a week.
-        The df is indexed by the week's POSIX timestamp, column names are
-        the names of the contributing account owners (=contributors).
-        Additionally it creates a pandas DataFrame with the total commits
-        of each contributor. This is not used / maintained in the current version.
-        """
-        try:
-            self.response_items = self.api_request.get_data()
-        except Exception as e:
-            e_line = sys.exc_info()[2].tb_lineno
-            print(f"Pulling contributors info for {self.payload['owner']}/"
-                  f"{self.payload['repo']} not successful: ")
-            errmsg = str(e) + " at line " + str(e_line) + str(type(e))
-            print(errmsg)
-            self.errors["request"] = errmsg
-            raise
-        else:
-            http_status = str(self.api_request.res_stat)
-            if http_status == "200":
-                # request went fine
-                self.errors["request"] = ""
-                if len(self.response_items) == 0:
-                    # still, no data
-                    self.errors["data"] = "empty"
-                    self.contributors = pd.DataFrame([], columns=["total_commits"])
-                    return self.contributors
-            else:
-                # no exception, but still no valid data or empty frame
-                print("\nERROR: Got no valid response on contributor data request.\n")
-                self.errors["request"] = (f"HTTP code {http_status} while pulling commits of"
-                                          + f"{self.payload['owner']}/{self.payload['repo']}")
-                return pd.DataFrame([], columns=["total_commits"])
-    
-        # first building the index (week) and first column ...
-        week_list = []
-        commit_first_list = []
-        for week in self.response_items[0]["weeks"]:
-            week_list.append(int(week["w"]))
-            commit_first_list.append(int(week["c"]))
-    
-        # now build the initial dataframe. we're appending only whole columns
-        self.contrib_fulldata = pd.DataFrame(commit_first_list,
-                                  columns=[self.response_items[0]["author"]["login"]],
-                                  index=week_list)
-    
-        # prepare the summary as nested list
-        contrib_summary = [
-                          [str(self.response_items[0]["author"]["login"])],
-                          [int(self.response_items[0]["total"])]
-                          ]
-    
-        # extract more data by columns
-        if len(self.response_items) > 1:
-            for contributor in self.response_items[1:]:
-                commit_list = []
-                for week in contributor["weeks"]:
-                    commit_list.append(int(week["c"]))
-                contr_name = str(contributor["author"]["login"])
-                # append new column to full list pd DataFrame
-                self.contrib_fulldata[contr_name] = commit_list
-                # append new column to summary lists
-                contrib_summary[0].append(contr_name)
-                contrib_summary[1].append(int(contributor["total"]))
-    
-        # finally, convert nested list summary to pd.df
-        self.contributors = pd.DataFrame(
-                                        contrib_summary[1],
-                                        index=contrib_summary[0],
-                                        columns=["total_commits"]
-                                        )
-    
-        return self.contributors
+    Returns a pandas DataFrame, each column corresponds to one contributor,
+    each row has the respective commit totals of a week.
+    The df is indexed by the week's POSIX timestamp, column names are
+    the names of the contributing account owners (=contributors).
+    Additionally it returns a pandas DataFrame with the total commits
+    of each contributor.
+    """
+    request_url = prepare_url("api_repo_contrib", payload)
+    api_response, http_status = get_api_response(request_url)
+    if http_status == "200":
+        result_list = decode_json(api_response)
+    else:
+        print("\nERROR: Got no valid response on contributors request.\n")
+        result_list = []
 
-    def get_contributors(self):
-        return self.contributors
+    week_list = []
+    # first building the index (week) and first column ...
+    commit_first_list = []
+    for week in result_list[0]["weeks"]:
+        week_list.append(int(week["w"]))
+        commit_first_list.append(int(week["c"]))
 
-    def get_raw_response(self):
-        return self.response_items
+    # now build the initial dataframe. we're appending only whole columns
+    contrib_df = pd.DataFrame(commit_first_list,
+                              columns=[result_list[0]["author"]["login"]],
+                              index=week_list)
 
-    def get_name(self):
-        return self.repo_name
+    # prepare the summary as nested list
+    contrib_summary = [
+                      [str(result_list[0]["author"]["login"])],
+                      [int(result_list[0]["total"])]
+                      ]
+
+    # extract column data
+    for contributor in result_list[1:]:
+        commit_list = []
+        for week in contributor["weeks"]:
+            commit_list.append(int(week["c"]))
+        contr_name = str(contributor["author"]["login"])
+        contrib_df[contr_name] = commit_list
+
+        contrib_summary[0].append(contr_name)
+        contrib_summary[1].append(int(contributor["total"]))
+
+    # finally, convert nested list summary to pd.df
+    contrib_sum_df = pd.DataFrame(contrib_summary[1],
+                                  index=contrib_summary[0],
+                                  columns=["total_commits"])
+
+    return contrib_sum_df, contrib_df
+
+
+def get_commits_by_rname(name, repo_list):
+    """Return commit data for repository from list, select by repo name."""
+    my_payload = {
+        "owner": repo_list[-1]["owner"],
+        "repo": repo_list[-1]["name"],
+        "search_kw": [],
+        "qualifiers": {}
+    }
+
+    # search repo owner that belongs to repo name if the latter exists
+    if name in [item["name"] for item in repo_list]:
+        my_payload["repo"] = name
+        my_payload["owner"] = list(filter(lambda item:
+                                          item["name"] == my_payload["repo"],
+                                          repo_list))[0]["owner"]
+    else:
+        raise ValueError("Repository name not found in given list.")
+
+    try:
+        commits = get_commits(my_payload)
+    except Exception as e:
+        e_line = sys.exc_info()[2].tb_lineno
+        print("Exception in get_commits_by_rname() occurred while "
+              "drawing data from API:")
+        print(e, "at line", e_line, type(e))
+        return None
+
+    return commits
+
+
+def get_contribs_by_rname(name, repo_list):
+    """Return contributor data for repo from list, select by repo name."""
+    my_payload = {
+        "owner": repo_list[-1]["owner"],
+        "repo": repo_list[-1]["name"],
+        "search_kw": [],
+        "qualifiers": {}
+    }
+
+    # search repo owner that belongs to repo name if the latter exists
+    if name in [item["name"] for item in repo_list]:
+        my_payload["repo"] = name
+        my_payload["owner"] = list(filter(lambda item:
+                                          item["name"] == my_payload["repo"],
+                                          repo_list))[0]["owner"]
+    else:
+        raise ValueError("Repository name not found in given list.")
+
+    try:
+        contrib_totals, contrib_df = get_contribs(my_payload)
+    except Exception as e:
+        e_line = sys.exc_info()[2].tb_lineno
+        print("Exception in get_commits_by_rname() occurred while "
+              "drawing data from API:")
+        print(e, "at line", e_line, type(e))
+        return None
+
+    return contrib_totals, contrib_df
 
 
 def github_client_main():
     """Test / present modules class(es)."""
+    smpl_pl_search = {
+        "owner": "",
+        "repo": "",
+        "search_kw": [
+            "intelligence",
+            "twitter",
+            "language:python"
+        ],
+        "qualifiers": {
+            "ref": "advsearch",
+            "per_page": 7
+        }
+    }
 
     # testing: ask for search terms.
     ask_sterms = True
@@ -425,59 +419,47 @@ def github_client_main():
             ask_sterms = False
         else:
             my_sterms.append(term)
-    my_sterms = my_sterms if len(my_sterms) else ["osint", "twitter"]
+    smpl_pl_search["search_kw"] = my_sterms if len(
+                my_sterms) else smpl_pl_search["search_kw"]
 
-    # pull search items from GitHub API
-    my_search = RepoSearch(my_sterms)
-    search_list = my_search.pull()
-
-    # sort list by stars (=likes)
+    search_list = get_search(smpl_pl_search)
+    # sort_key must be made lowercase for string keys
     sort_key = "stargazers_count"
     sorted_search = sorted(search_list,
                            key=lambda item: item[sort_key])
     # print an overview
     for row in sorted_search:
         print(f"repo: {row['name']}, owner: {row['owner']}, "
-              f"full_name: {row['full_name']}, "
-              f"stars: {row['stargazers_count']}"
+              f"stars: {row['stargazers_count']}",
               f"\n      description: {row['description'][:80]}")
 
     # request weekly commit statistics
     ask_repo = True
     while ask_repo:
-        repo_fname = input("Further info for which repo (full_name)? ")
-        if repo_fname == "":
+        repo_name = input("Which repo for commit display? ")
+        if repo_name == "":
             ask_repo = False
-        elif repo_fname.lower() == "r":
+        elif repo_name.lower() == "r":
             # print the search list again
             for row in sorted_search:
                 print(f"repo: {row['name']}, owner: {row['owner']}, "
-                      f"full_name: {row['full_name']}, "
-                      f"stars: {row['stargazers_count']}"
-                      f"\n      description: {row['description'][:80]}")
+                      f"stars: {row['stargazers_count']}")
+
         else:
-            my_commits = RepoCommits(repo_fname)
-            my_contribs = RepoContribs(repo_fname)
             try:
-                my_commits.pull()
-                my_contribs.pull()
+                my_commits = get_commits_by_rname(repo_name, sorted_search)
             except ValueError:
                 print("Requested repo name does not match search data. Again?")
                 continue
-            except Exception as e:
-                print(e, type(e))
-                break
             else:
-                print("my_commits", type(my_commits))
-                print("my_commits.get_commits()", type(my_commits.get_commits()))
-                pprint(my_commits.get_commits())
-                print("my_contribs", type(my_contribs))
-                print("my_contribs.get_contributors()", type(my_contribs.get_contributors()))
-                pprint(my_contribs.get_contributors())
-                print("\nTotal # commits within the last 52 weeks:",
-                      my_commits.get_commits()["commits"].sum())
-                print("\nNumber of contributors:",
-                      len(my_contribs.get_contributors()["total_commits"]))
+                pprint(my_commits)
+                print("Total # commits within the last 52 weeks:",
+                      my_commits["commits"].sum())
+
+            contrib_total, contrib_df = get_contribs_by_rname(repo_name,
+                                                              sorted_search)
+            pprint(contrib_total)
+            pprint(contrib_df)
 
 
 if __name__ == "__main__":
