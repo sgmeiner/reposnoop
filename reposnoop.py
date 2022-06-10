@@ -1,9 +1,9 @@
-"""reposnoop: Analyze data from GitHub repos. (main module)
+"""reposnoop: Analyze data from GitHub repos (main module).
 
 2022 by Stefan Groh, stefan_groh@gmx.de
 """
 import ghclient as gcl
-# import dataman as dm
+import dataman as dm
 # import charts
 # import rsgui
 from pprint import pprint
@@ -11,10 +11,10 @@ from pprint import pprint
 
 def rs_main():
     """Run the module standalone."""
-
     # testing: ask for search terms.
     ask_sterms = True
     my_sterms = []
+    # ask search terms from user
     while ask_sterms:
         term = input("Add search term: ")
         if term == "":
@@ -65,10 +65,12 @@ def rs_main():
                 break
             else:
                 print("my_commits", type(my_commits))
-                print("my_commits.get_commits()", type(my_commits.get_commits()))
+                print("my_commits.get_commits()",
+                      type(my_commits.get_commits()))
                 pprint(my_commits.get_commits())
                 print("my_contribs", type(my_contribs))
-                print("my_contribs.get_contributors()", type(my_contribs.get_contributors()))
+                print("my_contribs.get_contributors()",
+                      type(my_contribs.get_contributors()))
                 pprint(my_contribs.get_contributors())
                 print("\nTotal # commits within the last 52 weeks:",
                       my_commits.get_commits()["commits"].sum())
